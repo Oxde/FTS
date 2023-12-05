@@ -19,7 +19,7 @@ ctk.set_default_color_theme('dark-blue')
 '''
 "0[p"
 class MainWindow(ctk.CTk):
-    def __init__(self,x=-0.75,y=0,m=1.5,iterations=None, imgW = None, imgH=None):
+    def __init__(self,x=-0.75, y=0, m=1.5,iterations=None, imgW = None, imgH=None):
         super().__init__()
 
         self.setup_frames()
@@ -29,7 +29,7 @@ class MainWindow(ctk.CTk):
         ctk.set_appearance_mode('dark')
 
         self.img = None
-        self.canvasW = 700
+        self.canvasW = 600
         self.canvasH = 600
         self.title('FractalToSound')
         self.geometry('800x800')
@@ -39,10 +39,9 @@ class MainWindow(ctk.CTk):
         self.img = None
         self.draw()
 
-        self.bind("<Button-1>", self.canvas_scalein)
-        self.bind("<Button-3>", self.canvas_scaleout)
 
     def setup_frames(self):
+        # setuping frames
         self.frame_1 = ctk.CTkFrame(master=self, width=760, height=55)
         self.frame_1.place(x=20, y=20)
         self.frame_2 = ctk.CTkFrame(master=self, width=550, height=685)
@@ -51,6 +50,7 @@ class MainWindow(ctk.CTk):
         self.frame_3.place(x=590, y=95)
 
     def setup_labels(self):
+        # setuping labels
         self.name = ctk.CTkLabel(master=self, text='FractalToSound', bg_color='#212121', text_color='#1F538D',
                                  font=('Impact', 35))
         self.name.place(x=300, y=25)
@@ -61,6 +61,8 @@ class MainWindow(ctk.CTk):
         self.levels.place(x=605, y=105)
 
     def setup_buttons(self):
+        # setuping buttons
+        # TODO Change buttons LVLS, zoom in and zoom out. Add color adjusting, button for multi threading ( just yes or no) and restart button
         self.ldmode = ctk.CTkButton(master=self, width=160, height=30, text='Light', font=('Impact', 25),
                                     command=self.changemodelight)
         self.ldmode.place(x=605, y=730)
@@ -76,11 +78,17 @@ class MainWindow(ctk.CTk):
         self.zoomout.place(x=605, y=300)
 
     def setup_canvas(self):
+        #main_canvas is the place where iage basically is
         self.main_canvas = Canvas(master=self, height=675, width=540, background='#212121', highlightthickness=0)
         self.main_canvas.place(x=25, y=100)
+        self.main_canvas.bind("<Button-1>", self.canvas_scalein)
+        self.main_canvas.bind("<Button-3>", self.canvas_scaleout)
 
     '''' ---------------methods------------------'''
     def setPalette(self):
+        # sets pallete ( basically colors) to a random values, so fractal looks nice when zooming
+        # probably nice idea to add second mode, where colors can be manually chosed
+
         palette = [(0, 0, 0)]
         redb = 2 * math.pi / (random.randint(0, 128) + 128)
         redc = 256 * random.random()
@@ -99,7 +107,7 @@ class MainWindow(ctk.CTk):
         self.setPalette()
         self.pixelColors = []
         self.getColors()
-        self.drawPixels()
+        self.drawPixels_image()
         self.main_canvas.create_image(0, 0, image=self.background, anchor=NW)
         self.main_canvas.pack(fill=BOTH, expand=1)
 
@@ -109,37 +117,46 @@ class MainWindow(ctk.CTk):
             pixelColors.append(self.palette[p[2] % 256])
         self.pixelColors = pixelColors
 
-    '''def drawPixels_image(self):
-        img = Image.new('RGB', (self.fractal.w, self.fractal.h), "black")
-        pixels = img.load()  # create the pixel map
-        for index, p in enumerate(self.fractal.pixels):
-            pixels[int(p[0]), int(p[1])] = self.pixelColors[index]
-        self.img = img
-        if self.save:
-            self.saveImage(None)
-        photoimg = ImageTk.PhotoImage(img.resize((self.canvasW, self.canvasH)))
-        self.background = photoimg'''
+
 
     def drawPixels_image(self):
-        # Create PPM header
+        """
+                Generates and displays the Mandelbrot set as an image on the canvas.
+
+                This method creates a PPM (Portable Pixmap) format image string from the calculated
+                Mandelbrot set pixels. The PPM image is then loaded into a PhotoImage object and
+                displayed on the canvas widget.
+
+                The PPM format starts with a header indicating the image format, dimensions, and
+                maximum color value. The image data consists of RGB color values for each pixel.
+                """
         ppm_header = f'P6 {self.fractal.w} {self.fractal.h} 255\n'
 
-        # Create PPM image data
-        ppm_data = bytearray()
+        # Initialize an empty image data array
+        ppm_data = bytearray([0, 0, 0] * self.fractal.w * self.fractal.h)
+
+        # Set the pixels
         for p in self.fractal.pixels:
+            index = int(p[1]) * self.fractal.w + int(p[0])  # Calculate the index for linear array
             color = self.palette[p[2] % 256]
-            ppm_data.extend(color)
+            ppm_data[index * 3:index * 3 + 3] = color
 
         # Combine header and data to form PPM image string
         ppm_image = ppm_header.encode() + ppm_data
-
         # Load PPM image string into PhotoImage
-        self.img = PhotoImage(data=ppm_image)
-
+        self.background = PhotoImage(data=ppm_image)
         # Display the image on the canvas
-        self.main_canvas.create_image(0, 0, image=self.img, anchor=NW)
+        self.main_canvas.create_image(0, 0, image=self.background, anchor=NW)
 
     def draw(self):
+        """
+               Main method to initiate the drawing of the Mandelbrot set.
+
+               This method triggers the calculation of the Mandelbrot set, maps the iteration
+               counts to colors, and then calls drawPixels_image to render the image. It also
+               prints the time taken to process the drawing and the current coordinates of the
+               fractal view.
+               """
         print('-' * 20)
         start = time.time()
         self.fractal.getPixels()
@@ -152,12 +169,12 @@ class MainWindow(ctk.CTk):
     def canvas_scalein(self, event):
         self.fractal.zoomIn(event)
         self.draw()
-        print("+")
+        print(event.x,event.y)
 
     def canvas_scaleout(self, event):  # add keybinds
         self.fractal.zoomOut(event)
         self.draw()
-        print("-")
+        print(event.x,event.y)
 
     def changemodelight(self):
             ctk.set_appearance_mode('light')
@@ -168,7 +185,6 @@ class MainWindow(ctk.CTk):
             self.generate.configure(fg_color='#CD3700', hover_color='#8B2500', text_color='black')
             self.play.configure(fg_color='#CD3700', hover_color='#8B2500', text_color='black')
             self.main_canvas.configure(background='#E5E5E5')
-            self.main_canvas.create_line(270, 0, 270, 675, fill="#CD3700", width=5)  # delete later
             self.zoomin.configure(fg_color='#CD3700', hover_color='#8B2500', text_color='black')
             self.zoomout.configure(fg_color='#CD3700', hover_color='#8B2500', text_color='black')
             self.name1.configure(bg_color='#E5E5E5', text_color='Black')
