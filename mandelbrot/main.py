@@ -9,10 +9,18 @@ from PIL import Image, ImageTk
 ctk.set_default_color_theme('dark-blue')
 
 
+''''
 
+
+
+
+
+
+'''
+"0[p"
 class MainWindow(ctk.CTk):
-    def init(self,x=-0.3,y=0,m=1.5,iterations=None, imgW = None, imgH=None):
-        super().init()
+    def __init__(self,x=-0.3,y=0,m=1.5,iterations=None, imgW = None, imgH=None):
+        super().__init__()
 
         self.setup_frames()
         self.setup_labels()
@@ -93,3 +101,80 @@ class MainWindow(ctk.CTk):
         self.getColors()
         self.drawPixels()
         self.main_canvas.create_image(0, 0, image=self.background, anchor=NW)
+        self.main_canvas.pack(fill=BOTH, expand=1)
+
+    def getColors(self):
+        pixelColors = []
+        for p in self.fractal.pixels:
+            pixelColors.append(self.palette[p[2] % 256])
+        self.pixelColors = pixelColors
+
+    def drawPixels(self):
+        img = Image.new('RGB', (self.fractal.w, self.fractal.h), "black")
+        pixels = img.load()  # create the pixel map
+        for index, p in enumerate(self.fractal.pixels):
+            pixels[int(p[0]), int(p[1])] = self.pixelColors[index]
+        self.img = img
+        '''
+        if self.save:
+            self.saveImage(None)
+            '''
+        photoimg = ImageTk.PhotoImage(img.resize((self.canvasW, self.canvasH)))
+        self.background = photoimg
+
+    def draw(self):
+        print('-' * 20)
+        start = time.time()
+        self.fractal.getPixels()
+        self.getColors()
+        self.drawPixels()
+        self.main_canvas.create_image(0, 10, image=self.background, anchor=NW)
+        #self.main_canvas.pack(fill=BOTH, expand=1)
+        print("Process took {} seconds".format(round(time.time() - start, 2)))
+        print("Current coordinates (x, y, m): {}, {}, {}".format(self.fractal.xCenter, self.fractal.yCenter,
+                                                                 self.fractal.delta))
+
+    def canvas_scalein(self, event):
+        self.fractal.zoomIn(event)
+        self.draw()
+        print("+")
+
+    def canvas_scaleout(self, event):  # add keybinds
+        self.fractal.zoomOut(event)
+        self.draw()
+        print("-")
+
+    def changemodelight(self):
+            ctk.set_appearance_mode('light')
+            self.name.configure(bg_color='#E5E5E5', text_color="#CD3700")
+            self.levels.configure(bg_color='#E5E5E5')
+            self.ldmode.configure(command=self.changemodedark, fg_color='#CD3700', text='Dark', hover_color='#8B2500',
+                                  text_color='black')
+            self.generate.configure(fg_color='#CD3700', hover_color='#8B2500', text_color='black')
+            self.play.configure(fg_color='#CD3700', hover_color='#8B2500', text_color='black')
+            self.main_canvas.configure(background='#E5E5E5')
+            self.main_canvas.create_line(270, 0, 270, 675, fill="#CD3700", width=5)  # delete later
+            self.zoomin.configure(fg_color='#CD3700', hover_color='#8B2500', text_color='black')
+            self.zoomout.configure(fg_color='#CD3700', hover_color='#8B2500', text_color='black')
+            self.name1.configure(bg_color='#E5E5E5', text_color='Black')
+
+    def changemodedark(self):
+        ctk.set_appearance_mode('dark')
+        self.ldmode.configure(command=self.changemodelight, text='Light', fg_color='#1F538D', hover_color='#14375E',
+                                 text_color='white')
+        self.name.configure(bg_color='#212121', text_color='#1F538D')
+        self.levels.configure(bg_color='#212121')
+        self.generate.configure(fg_color='#1F538D', hover_color='#14375E', text_color='white')
+        self.play.configure(fg_color='#1F538D', hover_color='#14375E', text_color='white')
+        self.main_canvas.configure(background='#212121')
+        self.zoomin.configure(fg_color='#1F538D', hover_color='#14375E', text_color='white')
+        self.zoomout.configure(fg_color='#1F538D', hover_color='#14375E', text_color='white')
+        self.name1.configure(bg_color='#212121', text_color='white')
+
+
+def clamp(x):
+    return max(0, min(x, 255))
+
+if __name__ == '__main__':
+    program = MainWindow(imgH=900,imgW=1500,iterations=150)
+    program.mainloop()

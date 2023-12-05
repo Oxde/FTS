@@ -5,7 +5,7 @@ import os
 
 
 class Mandelbrot():
-    def init(self, canvasW, canvasH, x=-0.75, y=0, m=1.5, iterations=None, w=None, h=None, zoomFactor=0.1):
+    def __init__(self, canvasW, canvasH, x=-0.75, y=0, m=1.5, iterations=None, w=None, h=None, zoomFactor=0.1):
         self.w, self.h = (round(canvasW*0.9), round(canvasH*0.9)) if None in {w, h} else w, h
         self.iterations = 200 if iterations is None else iterations
         self.xCenter, self.yCenter = x, y
